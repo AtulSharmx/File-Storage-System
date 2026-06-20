@@ -193,7 +193,9 @@
   // Fix #2: Smart API Base URL
   // Uses localhost if on your computer, otherwise uses your real website link.
   const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-  const API_BASE = isLocal ? "http://localhost:8000" : "https://api.your-real-website.com";
+  
+  // ---> THIS IS THE LINE I CHANGED FOR YOU <---
+  const API_BASE = isLocal ? "http://localhost:8000" : "https://file-storage-system-backend-6iuy.onrender.com";
 
   const fileInput = document.getElementById("fileInput");
   const uploadBtn = document.getElementById("uploadBtn");

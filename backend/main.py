@@ -16,13 +16,13 @@ import s3_utils
 app = FastAPI(title="File Storage System")
 
 # SECURITY FIX: Only allow your trusted frontend to talk to this backend.
-# If you buy a real domain name later (like mywebsite.com), put it in this list.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000", 
         "http://127.0.0.1:5500", 
-        "http://127.0.0.1:8000"
+        "http://127.0.0.1:8000",
+        "https://filestoragesystemm.netlify.app" 
     ],
     allow_methods=["*"],
     allow_headers=["*"],
