@@ -68,9 +68,11 @@ def list_files():
     except Exception as e:
         return []
 
+from fastapi.responses import FileResponse
+
 @app.get("/")
 def root():
-    return {"message": "API is running"}
+    return FileResponse("index.html")
 
 @app.post("/upload")
 def upload(file: UploadFile):
