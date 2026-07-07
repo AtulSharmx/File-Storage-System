@@ -1,196 +1,67 @@
-# File Storage Backend
+# File Storage System
 
-A simple file storage backend powered by FastAPI and AWS S3-compatible storage. This project supports file upload, listing, search, delete, and temporary download links. It also includes a minimal frontend interface and custom algorithm implementations for sorting and searching.
+Upload, list, search, sort, and download files — backed by AWS S3.
 
-## Features
-
-- Upload files to S3 or an S3-compatible service
-- List stored files with metadata
-- Search files by name
-- Sort files by name, size, or date using a handwritten merge sort implementation
-- Delete files from storage
-- Generate presigned download URLs
-- Minimal frontend UI for upload, search, and file actions
-
-## Tech Stack
-
-- Python 3
-- FastAPI
-- Uvicorn
-- Boto3
-- python-dotenv
-- AWS S3 / MinIO-compatible storage
-
-## Repository Structure
+## Project Structure
 
 ```
-file-storage-backend/
-  backend/
-    main.py
-    s3_utils.py
-    setup_bucket.py
-    diagnose.py
-    requirements.txt
-    .env.example
-    algorithms/
-      sorting.py
-      searching.py
-  frontend/
-    index.html
+/
+  main.py          # Python backend (FastAPI + S3 + algorithms, all in one file)
+  index.html       # Frontend UI
+  requirements.txt
+  .env.example
   .gitignore
   README.md
 ```
 
-## Getting Started
+## Tech Stack
 
-### Requirements
+- Python 3 · FastAPI · Boto3 · python-dotenv
+- AWS S3 (or local MinIO)
+- Vanilla HTML / CSS / JS
 
-- Python 3.8+ installed
-- An AWS account with S3 access, or a local S3-compatible service such as MinIO
-- `pip` available for dependency installation
+## Setup
 
-### Install dependencies
+### 1. Install dependencies
 
 ```bash
-cd backend
-python -m venv .venv
-.\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Configure environment
+### 2. Configure environment
 
-Copy `backend/.env.example` to `backend/.env` and update the values for your environment.
-
-There are two supported setups:
-
-- **Local MinIO**: use `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` with a local MinIO server
-- **Real AWS S3**: leave `S3_ENDPOINT_URL` unset and provide real AWS credentials
-
-Example `.env` values:
+Copy `.env.example` to `.env` and fill in your AWS credentials:
 
 ```env
-AWS_ACCESS_KEY_ID=your-access-key-id
-AWS_SECRET_ACCESS_KEY=your-secret-access-key
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
 AWS_REGION=ap-south-1
 S3_BUCKET_NAME=your-bucket-name
-# Optional for local MinIO:
-# S3_ENDPOINT_URL=http://localhost:9000
+# S3_ENDPOINT_URL=http://localhost:9000  ← only for local MinIO
 ```
 
-> Do not commit `.env` to source control. Use `.env.example` as a template.
-
-### Create the bucket
-
-Run the helper script once to create the bucket if it does not already exist:
+### 3. Run the backend
 
 ```bash
-python setup_bucket.py
+uvicorn main:app --reload --port 8000
 ```
 
-### Run the backend
+### 4. Open the frontend
 
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
+Open `index.html` in your browser.
 
-The API will be available at `http://localhost:8000`.
+## API
 
-### Open the frontend
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/` | Health check |
+| POST | `/upload` | Upload a file |
+| GET | `/files` | List files (`sort_by`, `order`) |
+| GET | `/files/search?query=x` | Search by name |
+| DELETE | `/files/{filename}` | Delete a file |
+| GET | `/files/{filename}/download` | Get temp download link |
 
-Open `frontend/index.html` in your browser, or serve it with a static file server. The frontend is configured to use `http://localhost:8000` when running locally.
+## Algorithms (in main.py)
 
-## API Reference
-
-### GET /
-
-Returns a simple health check response.
-
-### POST /upload
-
-Upload a file.
-
-Form field: `file`
-
-Response:
-
-```json
-{ "message": "<filename> uploaded successfully!" }
-```
-
-### GET /files
-
-List files with metadata.
-
-Query parameters:
-
-- `sort_by`: `name`, `size`, or `date` (default: `name`)
-- `order`: `asc` or `desc` (default: `asc`)
-
-Response:
-
-```json
-{ "files": [ { "name": "...", "size": 1234, "last_modified": "..." } ] }
-```
-
-### GET /files/search
-
-Search file names.
-
-Query parameter: `query`
-
-Response:
-
-```json
-{ "results": [ ... ] }
-```
-
-### DELETE /files/{filename}
-
-Delete a file by filename.
-
-Response:
-
-```json
-{ "message": "<filename> deleted" }
-```
-
-### GET /files/{filename}/download
-
-Generate a temporary download URL.
-
-Response:
-
-```json
-{ "url": "https://..." }
-```
-
-## Algorithms
-
-This project includes handwritten implementations of classic algorithms in `backend/algorithms`:
-
-- `sorting.py`: merge sort used for file ordering
-- `searching.py`: linear search for query matching and binary search for exact lookups
-
-These implementations are included for learning and demonstration.
-
-## Diagnostics
-
-The `backend/diagnose.py` script helps verify environment variables and AWS credentials without exposing full secrets.
-
-Run:
-
-```bash
-python diagnose.py
-```
-
-## Notes
-
-- Ensure `S3_BUCKET_NAME` is set correctly in `backend/.env`
-- If using local MinIO, set `S3_ENDPOINT_URL` in `.env`
-- The backend only allows CORS from `http://localhost:3000`, `http://127.0.0.1:5500`, and `http://127.0.0.1:8000`
-
-## License
-
-This repository does not include a license. Add one if you intend to share it publicly.
-#
+- **Merge Sort** `O(n log n)` — sorts files by name / size / date
+- **Linear Search** `O(n)` — searches file names by partial match

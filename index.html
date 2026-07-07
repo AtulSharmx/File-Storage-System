@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Storage System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            border: 1px solid black;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>File Storage System</h1>
+
+    <div class="container">
+        <h3>Upload File</h3>
+        <input type="file" id="fileInput">
+        <button onclick="uploadFile()">Upload</button>
+        <p id="uploadMessage"></p>
+    </div>
+
+    <div class="container">
+        <h3>Files</h3>
+        
+        <label>Sort by:</label>
+        <select id="sortBy" onchange="loadFiles()">
+            <option value="name">Name</option>
+            <option value="size">Size</option>
+            <option value="date">Date</option>
+        </select>
+
+        <select id="sortOrder" onchange="loadFiles()">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+        
+        <label>Search:</label>
+        <input type="text" id="searchBox" oninput="searchFiles()">
+        
+        <br><br>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Size (Bytes)</th>
+                    <th>Date</th>
+                    <th>Download</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody id="fileTable">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:8000";
+
+        async function uploadFile() {
+            let fileInput = document.getElementById("fileInput");
+            if (fileInput.files.length == 0) {
+                alert("Please select a file first");
+                return;
+            }
+
+            let file = fileInput.files[0];
+            let formData = new FormData();
+            formData.append("file", file);
+
+            document.getElementById("uploadMessage").innerText = "Uploading...";
+
+            try {
+                let response = await fetch(API_URL + "/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    document.getElementById("uploadMessage").innerText = "Uploaded successfully!";
+                    loadFiles();
+                } else {
+                    document.getElementById("uploadMessage").innerText = "Upload failed.";
+                }
+            } catch (error) {
+                document.getElementById("uploadMessage").innerText = "Network error.";
+            }
+        }
+
+        async function loadFiles() {
+            let sortBy = document.getElementById("sortBy").value;
+            let sortOrder = document.getElementById("sortOrder").value;
+            
+            try {
+                let response = await fetch(API_URL + "/files?sort_by=" + sortBy + "&order=" + sortOrder);
+                let data = await response.json();
+                showFiles(data.files);
+            } catch (error) {
+                console.log("Error loading files");
+            }
+        }
+
+        async function searchFiles() {
+            let query = document.getElementById("searchBox").value;
+            if (query == "") {
+                loadFiles();
+                return;
+            }
+
+            try {
+                let response = await fetch(API_URL + "/files/search?query=" + query);
+                let data = await response.json();
+                showFiles(data.results);
+            } catch (error) {
+                console.log("Error searching files");
+            }
+        }
+
+        function showFiles(files) {
+            let table = document.getElementById("fileTable");
+            table.innerHTML = "";
+
+            for (let i = 0; i < files.length; i++) {
+                let f = files[i];
+                let row = "<tr>";
+                row += "<td>" + f.name + "</td>";
+                row += "<td>" + f.size + "</td>";
+                row += "<td>" + f.last_modified + "</td>";
+                row += "<td><button onclick='downloadFile(\"" + f.name + "\")'>Download</button></td>";
+                row += "<td><button onclick='deleteFile(\"" + f.name + "\")'>Delete</button></td>";
+                row += "</tr>";
+                table.innerHTML += row;
+            }
+        }
+
+        async function deleteFile(filename) {
+            if (!confirm("Are you sure you want to delete " + filename + "?")) {
+                return;
+            }
+
+            try {
+                await fetch(API_URL + "/files/" + filename, {
+                    method: "DELETE"
+                });
+                loadFiles();
+            } catch (error) {
+                alert("Could not delete file");
+            }
+        }
+
+        async function downloadFile(filename) {
+            try {
+                let response = await fetch(API_URL + "/files/" + filename + "/download");
+                let data = await response.json();
+                window.open(data.url, "_blank");
+            } catch (error) {
+                alert("Could not download file");
+            }
+        }
+
+        loadFiles();
+    </script>
+</body>
+</html>
