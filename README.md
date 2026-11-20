@@ -1,83 +1,81 @@
-﻿# 🗄️ File Storage System
+# File storage system
 
-A lightweight file storage web app built with **FastAPI** (Python) and **AWS S3**. Upload, search, sort, download and delete files — all from a clean browser UI.
+Upload files to AWS S3 from the browser, then list, sort, search, download and delete
+them. FastAPI on the backend, one HTML page on the front.
 
-🌐 **Live Demo:** [file-storage-with-aws.vercel.app](https://file-storage-with-aws.vercel.app/)
+[Live demo](https://file-storage-with-aws.vercel.app/)
 
----
+## Why the sorting and searching are written by hand
 
-## ✨ Features
+The sort and the search in `main.py` are implemented from scratch rather than calling
+`sorted()` or a list comprehension, because that was the point of the exercise. Python
+would do both in one line; writing them out is what the assignment was about.
 
-- ☁️ Upload files directly to AWS S3
-- 📋 List all uploaded files with size and upload date
-- 🔃 Sort files by name, size, or date
-- 🔍 Search for specific files
-- ⬇️ Download and 🗑️ delete files
+`merge_sort` is the standard divide and conquer: split the list in half, sort each half
+recursively, then walk the two sorted halves together taking the smaller head each time.
+It takes a `key` function and a `reverse` flag so the same function handles sorting by
+name, by size and by date without three copies of it.
 
----
+`linear_search` walks the whole list and keeps anything whose name contains the query,
+case-insensitively. That is O(n) every time, which is fine here: S3 returns a few hundred
+keys and the network round trip costs far more than the scan. A real search over a large
+bucket would need the index somewhere else, not a loop in the request handler.
 
-## 🛠️ Tech Stack
+## API
 
-| Layer | Technology |
-|-------|------------|
-| Backend | Python + FastAPI |
-| Storage | AWS S3 |
-| Frontend | HTML / CSS / JavaScript |
-| Deployment | Vercel |
+| Method | Path | What it does |
+|---|---|---|
+| `GET` | `/` | Serves the page |
+| `POST` | `/upload` | Uploads a file to the bucket |
+| `GET` | `/files?sort_by=&order=` | Lists files, sorted by `name`, `size` or `date` |
+| `GET` | `/files/search?query=` | Filters by filename |
+| `DELETE` | `/files/{filename}` | Removes it from the bucket |
+| `GET` | `/files/{filename}/download` | Returns a presigned URL, valid one hour |
 
----
+Uploads get an eight character uuid prefixed to the filename, so two people uploading
+`notes.pdf` do not overwrite each other.
 
-## 🚀 Run it locally
+Downloads hand back a presigned S3 URL rather than streaming the file through the server.
+The bucket stays private, the link expires after an hour, and the file never passes
+through the backend.
 
-### 1. Install requirements
-
-Make sure Python is installed, then run:
+## Running it
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Set up environment variables
-
-Create a `.env` file in the same folder as `main.py` and paste this inside:
+Make a `.env` next to `main.py`:
 
 ```env
-AWS_ACCESS_KEY_ID=your_access_key_here
-AWS_SECRET_ACCESS_KEY=your_secret_key_here
-AWS_REGION=us-east-1
-S3_BUCKET_NAME=your-s3-bucket-name
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_REGION=ap-south-1
+S3_BUCKET_NAME=your-bucket-name
 ```
 
-> ⚠️ **Never upload your `.env` file to GitHub!** It is already in `.gitignore` but double check.
-
-### 3. Start the backend
+`.env` is in `.gitignore`. Keep it that way: those two keys can run up a real bill.
 
 ```bash
 uvicorn main:app --reload
 ```
 
-Backend runs at → `http://127.0.0.1:8000`
+Then open `http://127.0.0.1:8000`.
 
-### 4. Open the frontend
+## Known limits
 
-Just double-click `index.html` to open it in your browser. That is it!
+This was built to practise the algorithms, not to be deployed as-is, and a few things
+would have to change first:
 
----
+- CORS is open to every origin (`allow_origins=["*"]`).
+- There is no authentication, so anyone who can reach the API can delete anyone's files.
+- There is no upload size cap, so a large file ties up the request.
+- Every list, sort and search re-fetches the whole bucket listing from S3.
 
-## 📁 Project Structure
+## Files
 
 ```
-File-Storage-System/
-│
-├── main.py           # FastAPI backend
-├── index.html        # Frontend UI
-├── requirements.txt  # Python dependencies
-├── .gitignore
-└── .env              # (not pushed to GitHub)
+main.py           FastAPI app, merge sort and linear search
+index.html        the page
+requirements.txt
 ```
-
----
-
-## 👤 Author
-
-**AtulSharmx** — BCA Student | Building projects with Python and Cloud ☁️
