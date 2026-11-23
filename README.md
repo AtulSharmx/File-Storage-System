@@ -69,7 +69,7 @@ would have to change first:
 
 - CORS is open to every origin (`allow_origins=["*"]`).
 - There is no authentication, so anyone who can reach the API can delete anyone's files.
-- There is no upload size cap, so a large file ties up the request.
+- Uploads are capped at 10 MB (`MAX_UPLOAD_MB`), but the file is still buffered in full before it reaches S3.
 - Every list, sort and search re-fetches the whole bucket listing from S3.
 
 ## Files
